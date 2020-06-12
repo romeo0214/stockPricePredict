@@ -65,39 +65,6 @@ class stockPricePredict():
         x_train=np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
 
 
-        #check if model exists skip training
-        if os.path.exists("model.yaml"):
-            # load json and create model
-            json_file = open('model.json', 'r')
-            loaded_model_json = json_file.read()
-            json_file.close()
-            loaded_model = model_from_json(loaded_model_json)
-            # load weights into new model
-            loaded_model.load_weights("model.h5")
-
-        else:
-
-            #build the LSTM model
-            model = Sequential()
-            model.add(LSTM(50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
-            model.add(LSTM(50, return_sequences=False))
-            model.add(Dense(25))
-            model.add(Dense(1))
-
-            #compile the model
-            model.compile(optimizer='adam', loss='mean_squared_error')
-
-            #train the model
-            model.fit(x_train, y_train, batch_size=1, epochs=1)
-
-            # serialize model to JSON
-            model_json = model.to_json()
-            with open("model.json", "w") as json_file:
-                json_file.write(model_json)
-            # serialize weights to HDF5
-            model.save_weights("model.h5")
-
-
         #create the testing data set
         #create a new array containing scaled values
         test_data = scaled_data[training_Data_len-60:, :]
@@ -114,7 +81,20 @@ class stockPricePredict():
         
         #reshape the data
         x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
-        
+
+        # build the LSTM model
+        model = Sequential()
+        model.add(LSTM(50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
+        model.add(LSTM(50, return_sequences=False))
+        model.add(Dense(25))
+        model.add(Dense(1))
+        # compile the model
+        model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+        # train the model
+        model.fit(x_train, y_train, batch_size=1, epochs=1)
+
+
+
         #get the models predicted price values
         predictions = model.predict(x_test)
         predictions = scaler.inverse_transform(predictions)
@@ -176,6 +156,31 @@ class stockPricePredict():
         pred_price = scaler.inverse_transform(pred_price)
         print('Prediction Closing Price for today:', pred_price)
 
+
+        # Override current model if acc greater
+
+        # load json and create model
+        json_file = open('model.json', 'r')
+        loaded_model_json = json_file.read()
+        json_file.close()
+        loaded_model = model_from_json(loaded_model_json)
+        # load weights into new model
+        loaded_model.load_weights("model.h5")
+        loaded_model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+        acc1 = loaded_model.evaluate(x_test, y_test, verbose=0)
+        acc2 = model.evaluate(x_test, y_test, verbose=0)
+        print(acc1)
+        print(acc2)
+
+
+        if acc1 < acc2:
+            # serialize model to JSON
+            model_json = model.to_json()
+            with open("model.json", "w") as json_file:
+                json_file.write(model_json)
+            # serialize weights to HDF5
+            model.save_weights("model.h5")
+            print('Overwrite model')
 
 if __name__ == "__main__":
     stockCode="JFC"
