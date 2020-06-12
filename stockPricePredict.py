@@ -6,7 +6,7 @@ import math
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import Sequential, model_from_yaml
+from tensorflow.keras.models import Sequential, model_from_json
 from tensorflow.keras.layers import Dense, LSTM
 import matplotlib
 #matplotlib.use('Agg')
@@ -67,13 +67,13 @@ class stockPricePredict():
 
         #check if model exists skip training
         if os.path.exists("model.yaml"):
-            # load YAML and create model
-            yaml_file = open("model.yaml", 'r')
-            loaded_model_yaml = yaml_file.read()
-            yaml_file.close()
-            model = model_from_yaml(loaded_model_yaml)
+            # load json and create model
+            json_file = open('model.json', 'r')
+            loaded_model_json = json_file.read()
+            json_file.close()
+            loaded_model = model_from_json(loaded_model_json)
             # load weights into new model
-            model.load_weights("model.h5")
+            loaded_model.load_weights("model.h5")
 
         else:
 
@@ -90,10 +90,10 @@ class stockPricePredict():
             #train the model
             model.fit(x_train, y_train, batch_size=1, epochs=1)
 
-            # serialize model to YAML
-            model_yaml = model.to_yaml()
-            with open("model.yaml", "w") as yaml_file:
-                yaml_file.write(model_yaml)
+            # serialize model to JSON
+            model_json = model.to_json()
+            with open("model.json", "w") as json_file:
+                json_file.write(model_json)
             # serialize weights to HDF5
             model.save_weights("model.h5")
 
